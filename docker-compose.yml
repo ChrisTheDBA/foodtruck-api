@@ -1,0 +1,57 @@
+version: '3'
+services:
+  db:
+    image: mysql:5
+    environment:
+      MYSQL_ROOT_PASSWORD: my-P@ssw0rd1
+      MYSQL_DATABASE: nrid
+      MYSQL_USER: cmathews
+      MYSQL_PASSWORD: P@ssw0rd1
+    volumes:
+      - "./db/data:/var/lib/mysql"    
+    restart: always
+    container_name: db
+    ports: 
+      - "3306:3306"
+  mongo:
+    image: mongo:3.6.9-stretch
+    restart: always
+    links:
+      - db
+    container_name: mongo  
+    ports: 
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+      - mongoconfig:/data/configdb
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - db
+    links:
+      - db
+    ports:
+      - "8080:80"
+    container_name: phpmyadmin  
+  node:
+     build: ./node
+     working_dir: /usr/src/app
+     environment:
+       - NODE_ENV=development
+     volumes:
+       - ./node:/usr/src/app
+       #- /usr/src/app/node_modules  
+     links:
+       - db
+       - mongo
+     ports:
+      - "3000:3000"  
+      - "3004:3004"
+     container_name: node
+#     command: nodemon -L server.js
+     command: tail -F anything
+#     command: npm run dev
+volumes:
+  mongodata:
+  mongoconfig:  
+
