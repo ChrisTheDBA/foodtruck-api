@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Router } from 'express';
-import FoodTruck from '../model/FoodTruck';
+import FoodTruck from '../model/foodtruck';
 
 export default ({ config, db }) => {
 	let api = Router();
@@ -63,6 +63,33 @@ export default ({ config, db }) => {
 				res.send(err);
 			}
 			res.json({ message: "FoodTruck successully removed"});
+		});
+	});
+
+	//add review for a psecific foodtruck id
+	// '/v1/foodtruck/reviews/add:id'
+	api.post('/reviews/add/:id', (req, res) => {
+		FoodTruck.findById(req.params.id, (err, foodtruck) => {
+			if (err) {
+				res.send(err);
+			}
+			let newReview = new Review();
+
+			newReview.title = req.body.title;
+			newReview.text = req.body.text;
+			newReview.foodtruck = foodtruck._id;
+			newReview.save((err, review) => {
+				if (err) {
+					res.send(err);
+				}
+				foodtruck.reviews.push(newReview);
+				foodtruck.save(err => {
+					if (err) {
+						res.send(err);
+					}
+					res.json({ message: "Food Truck review saved!"});
+				});
+			});
 		});
 	});
 
