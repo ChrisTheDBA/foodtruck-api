@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import { Router } from 'express';
 import FoodTruck from '../model/foodtruck';
+import Review from '../model/review';
+import bodyParser from 'body-parser';
 
 export default ({ config, db }) => {
 	let api = Router();
@@ -9,6 +11,9 @@ export default ({ config, db }) => {
 	api.post('/add', (req, res) => {
 		let newFoodTruck = new FoodTruck();
 		newFoodTruck.name = req.body.name;
+		newFoodTruck.foodtype = req.body.foodtype;
+		newFoodTruck.avgcost = req.body.avgcost;
+		newFoodTruck.geometry.coordinates = req.body.geometry.coordinates;		
 
 		newFoodTruck.save(function(err) {
 			if (err) {
@@ -18,7 +23,7 @@ export default ({ config, db }) => {
 		});
 	});
 
-	// '/v1/foodtruck' - Read
+	// '/v1/foodtruck' - Read all
 	api.get( '/', (req, res) => {
 		FoodTruck.find({}, (err, FoodTrucks) => {
 			if (err) {
@@ -28,7 +33,7 @@ export default ({ config, db }) => {
 		});
 	});
 
-	// '/v1/restaurnat/:id' - Read 1
+	// '/v1/foodtruck/:id' - Read 1
 	api.get('/:id', (req, res) => {
 		FoodTruck.findById(req.params.id, (err, FoodTruck) => {
 			if (err) {
@@ -38,6 +43,17 @@ export default ({ config, db }) => {
 		});
 	});
 
+	// find all foodtrucks with a specific foodtype
+	// '/v1/foodtruck/foodtype/:foodtype'
+	api.get('/foodtype/:foodtype', (req, res) => {
+		FoodTruck.find({foodtype: req.params.foodtype}, (err, FoodTrucks) => {
+			if (err) {
+				res.send(err);
+			}
+			res.json(FoodTrucks);
+		});
+	}); 
+
 	// '/v1/FoodTruck/:id' - Update
 	api.put('/:id', (req, res) => {
 		FoodTruck.findById(req.params.id, (err, FoodTruck) => {
@@ -45,6 +61,9 @@ export default ({ config, db }) => {
 				res.send(err);
 			}
 			FoodTruck.name = req.body.name;
+			FoodTruck.foodtype = req.body.foodtype;
+			FoodTruck.avgcost = req.body.avgcost;
+			FoodTruck.geometry.coordinates = req.body.geometry.coordinates;		
 			FoodTruck.save(err => {
 				if (err) {
 					res.send(err);
@@ -62,36 +81,54 @@ export default ({ config, db }) => {
 			if (err) {
 				res.send(err);
 			}
-			res.json({ message: "FoodTruck successully removed"});
-		});
-	});
-
-	//add review for a psecific foodtruck id
-	// '/v1/foodtruck/reviews/add:id'
-	api.post('/reviews/add/:id', (req, res) => {
-		FoodTruck.findById(req.params.id, (err, foodtruck) => {
-			if (err) {
+			Review.remove({
+				foodtruck: req.params.id
+			}, (err, review) => {
+				if (err) {
 				res.send(err);
 			}
-			let newReview = new Review();
-
-			newReview.title = req.body.title;
-			newReview.text = req.body.text;
-			newReview.foodtruck = foodtruck._id;
-			newReview.save((err, review) => {
-				if (err) {
-					res.send(err);
-				}
-				foodtruck.reviews.push(newReview);
-				foodtruck.save(err => {
-					if (err) {
-						res.send(err);
-					}
-					res.json({ message: "Food Truck review saved!"});
-				});
-			});
+			res.json({ message: "FoodTruck successully removed"});		
 		});
 	});
+	});
 
-	return api;
+// add a review by a specific foodtruck id
+  // '/v1/foodtruck/reviews/add/:id'
+  api.post('/reviews/add/:id', (req, res) => {
+    FoodTruck.findById(req.params.id, (err, foodtruck) => {
+      if (err) {
+        res.send(err);
+      }
+      let newReview = new Review();
+
+      newReview.title = req.body.title;
+      newReview.text = req.body.text;
+      newReview.foodtruck = foodtruck._id;
+      newReview.save((err, review) => {
+        if (err) {
+          res.send(err);
+        }
+        foodtruck.reviews.push(newReview);
+        foodtruck.save(err => {
+          if (err) {
+            res.send(err);
+          }
+          res.json({ message: 'Food truck review saved' });
+        });
+      });
+    });
+  });
+
+  // return all reviews for a specic foodtruck id
+  // '/v1/foodtruck/reviews/:id'
+  api.get('/reviews/:id', (req, res) => {
+  	Review.find({foodtruck: req.params.id}, (err, reviews) => {
+  		if (err) {
+  			res.send(err);
+  		}
+  		res.json(reviews);
+  	});
+  });
+
+  return api;
 }
