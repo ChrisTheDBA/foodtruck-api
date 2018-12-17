@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-const Schema from mongoose.Schema;
-
+const Schema = mongoose.Schema;
 import passportLocalMongoose from 'passport-local-mongoose';
 
-let Account - new Schema({
+let Account = new Schema({
 	email: {
 		type: String,
 		required: true
@@ -14,4 +13,5 @@ let Account - new Schema({
 	}
 });
 
-Account.plugin()
+Account.plugin(passportLocalMongoose);
+module.exports = mongoose.model('Account', Account);
